@@ -22,7 +22,8 @@ Configuration DeployVM
                 $DnsIp1 = $Vm.dnsIP1
                 $VmSwitch = $Vm.vSwitchName
                 $Memory = $Vm.memory
-                $CPU = $Vm.cpu
+                $CPU = $Vm.vCpu
+                $VlanId = $Vm.vlanID
 
                 $newSystemVHDFolder = "$($DestPath)\$($VmName)"
                 $newSystemVHDPath = "$($newSystemVHDFolder)\$($VMName)_OS.vhdx"
@@ -48,8 +49,6 @@ Configuration DeployVM
                     (Convert-RvNetSubnetMaskClassesToCidr $VmSubnetMask))
                 $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!DefaultGateway",$Gateway)
                 $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!DnsIP1",$DnsIp1)
-
-                Write-Host $sourceUnattendXmlContent
 
                 $newUnattendXmlPath = "$($newSystemVHDFolder)\unattend.xml"
                 
@@ -82,12 +81,25 @@ Configuration DeployVM
                     Path            = $newSystemVHDFolder
                     Generation      = 2
                     StartupMemory   = $([int] $Memory * $gigabyte)
-                    MinimumMemory   = $([int] $Memory * $gigabyte)
-                    MaximumMemory   = $([int] $Memory * $gigabyte)
                     ProcessorCount  = $CPU
                     RestartIfNeeded = $true
                     WaitForIP       = $WaitForIP 
                     DependsOn       = "[File]$($NodeName)_$($VmName)_SystemDisk","[xVhdFile]$($NodeName)_$($VmName)_CopyUnattendxml"
+                }
+
+                Script "$($NodeName)_$($VmName)_VlanID"
+                {
+                    SetScript = 
+                    { 
+                        Set-VMNetworkAdapterVlan -VMNetworkAdapterName  "Network Adapter"  -VMName $using:VmName -Access -VlanId $using:VlanId
+                    }
+                    TestScript = {
+                        $(Get-VMNetworkAdapterVlan -VMNetworkAdapterName "Network Adapter" -VMName $using:VmName).AccessVlanId -eq $using:VlanId
+                    }
+                    GetScript = {
+                        $(Get-VMNetworkAdapterVlan -VMNetworkAdapterName "Network Adapter" -VMName $using:VmName).AccessVlanId
+                    }
+                    DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"         
                 }
                 
             }

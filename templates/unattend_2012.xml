@@ -30,7 +30,7 @@
     <settings pass="specialize">
          <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
              language="neutral" versionScope="nonSxS">
-            <ComputerName>$ComputerName</ComputerName>
+            <ComputerName>!ComputerName</ComputerName>
             <ProductKey>QNTTT-Q36HP-MRR46-TWH9V-RGB48</ProductKey>
             <RegisteredOwner>Dimension Data</RegisteredOwner>
             <RegisteredOrganization>HMAIL</RegisteredOrganization>
@@ -47,13 +47,13 @@
                     </Ipv6Settings>
                     <Identifier>Ethernet</Identifier>
                     <UnicastIpAddresses>
-                        <IpAddress wcm:action="add" wcm:keyValue="1">$IPAddress/$SubnetMask</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="1">!IPAddress/!SubnetMask</IpAddress>
                     </UnicastIpAddresses>
                     <Routes>
                         <Route wcm:action="add">
                             <Identifier>1</Identifier>
                             <Prefix>0.0.0.0/0</Prefix>
-                            <NextHopAddress>$DefaultGateway</NextHopAddress>
+                            <NextHopAddress>!DefaultGateway</NextHopAddress>
                         </Route>
                     </Routes>
                 </Interface>
@@ -66,7 +66,7 @@
                     <Identifier>Ethernet</Identifier>
                     <DNSDomain></DNSDomain>
                     <DNSServerSearchOrder>
-                        <IpAddress wcm:action="add" wcm:keyValue="1">$DnsIP1</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="1">!DnsIP1</IpAddress>
                     </DNSServerSearchOrder>
                     <EnableAdapterDomainNameRegistration>true</EnableAdapterDomainNameRegistration>
                     <DisableDynamicUpdate>false</DisableDynamicUpdate>
@@ -103,7 +103,7 @@
                     <Username>psadmin3</Username>
                 </Credentials>
                 <JoinDomain>hmail.sg</JoinDomain>
-                <MachineObjectOU>$MachineOU</MachineObjectOU>
+                <!-- <MachineObjectOU>!MachineOU</MachineObjectOU> -->
                 <UnsecureJoin>False</UnsecureJoin>
             </Identification>
         </component>

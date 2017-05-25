@@ -94,5 +94,18 @@
                 </RunSynchronousCommand>
             </RunSynchronous>
         </component>
+        <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" 
+            language="neutral" versionScope="nonSxS">
+            <Identification>
+                <Credentials>
+                    <Domain>hmail.sg</Domain>
+                    <Password>P@ssw0rd01!</Password>
+                    <Username>psadmin3</Username>
+                </Credentials>
+                <JoinDomain>hmail.sg</JoinDomain>
+                <!-- <MachineObjectOU>!MachineOU</MachineObjectOU> -->
+                <UnsecureJoin>False</UnsecureJoin>
+            </Identification>
+        </component>
     </settings>
 </unattend>

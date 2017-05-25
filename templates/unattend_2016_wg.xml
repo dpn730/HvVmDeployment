@@ -86,7 +86,7 @@
             <RunSynchronous>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>1</Order>
-                    <Path>netsh advfirewall firewall add rule name=ICMP protocol=icmpv4 dir=in action=allow</Path>
+                    <Path>netsh advfirewall firewall set rule group="File and Printer Sharing" new enable=yes</Path>
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>2</Order>

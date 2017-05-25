@@ -89,15 +89,33 @@ Configuration DeployVM
 
                 Script "$($NodeName)_$($VmName)_VlanID"
                 {
-                    SetScript = 
-                    { 
+                    SetScript = { 
                         Set-VMNetworkAdapterVlan -VMNetworkAdapterName  "Network Adapter"  -VMName $using:VmName -Access -VlanId $using:VlanId
                     }
                     TestScript = {
-                        $(Get-VMNetworkAdapterVlan -VMNetworkAdapterName "Network Adapter" -VMName $using:VmName).AccessVlanId -eq $using:VlanId
+                        if($(Get-VMNetworkAdapterVlan -VMNetworkAdapterName "Network Adapter" -VMName $using:VmName).AccessVlanId -ne $using:VlanId) {
+                            return $false
+                        }
+                        else {
+                            return $true
+                        }
                     }
                     GetScript = {
                         $(Get-VMNetworkAdapterVlan -VMNetworkAdapterName "Network Adapter" -VMName $using:VmName).AccessVlanId
+                    }
+                    DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"         
+                }
+
+                Script "$($NodeName)_$($VmName)_DynamicMemory"
+                {
+                    SetScript = { 
+                        Set-VMMemory -VMName $using:VmName -DynamicMemoryEnabled $false
+                    }
+                    TestScript = {
+                        return !($(Get-VMMemory -VMName "$($using:VmName)").DynamicMemoryEnabled)
+                    }
+                    GetScript = {
+                        $(Get-VMMemory -VMName $using:VmName).DynamicMemoryEnabled
                     }
                     DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"         
                 }

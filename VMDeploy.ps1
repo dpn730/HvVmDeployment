@@ -38,7 +38,7 @@ Configuration VMDeploy
     Node $NodeName
     {        
         $newSystemVHDFolder = "$($OutputBasePath)\$($VMName)"
-        $NewSystemVHDPath = "$($OutputBasePath)\$($VMName)\$($VMName)_C.vhdx"
+        $NewSystemVHDPath = "$($OutputBasePath)\$($VMName)\$($VMName)_OS.vhdx"
 
         File "$($NodeName)_Folder" {
             Type = 'Directory'
@@ -53,6 +53,16 @@ Configuration VMDeploy
             Type = "File"
             Ensure = "Present"
             DependsOn = "[File]$($NodeName)_Folder"
+        }
+
+        xVhdFile CopyUnattendxml
+        {
+            VhdPath =  $NewSystemVHDPath
+            FileDirectory =  MSFT_xFileDirectory {
+                            SourcePath = 'C:\Users\David Paul Ngo\OneDrive\Projects\IHIS\VMDeploy\unattend.xml'
+                            DestinationPath = "\Windows\Panther\unattend.xml"
+                        }
+            DependsOn = "[File]SystemDisk"
         }
 
         # create the generation 2 testVM out of the vhd.
@@ -71,7 +81,7 @@ Configuration VMDeploy
             ProcessorCount  = $ProcessorCount
             RestartIfNeeded = $true
             WaitForIP       = $WaitForIP 
-            DependsOn       = "[File]SystemDisk"
+            DependsOn       = "[File]SystemDisk","[XVhdFile]CopyUnattendxml"
         }
     }
 }

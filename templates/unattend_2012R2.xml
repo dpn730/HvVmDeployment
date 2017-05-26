@@ -99,7 +99,7 @@
             <Identification>
                 <Credentials>
                     <Domain>hmail.sg</Domain>
-                    <Password>P@ssw0rd01$</Password>
+                    <Password>P@ssw0rd01!</Password>
                     <Username>psadmin3</Username>
                 </Credentials>
                 <JoinDomain>hmail.sg</JoinDomain>

@@ -1,4 +1,4 @@
-Configuration DeployVM
+Configuration Hyper-V_Configuration
 {
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -Module xHyper-V
@@ -15,15 +15,17 @@ Configuration DeployVM
                 $VmName = $Vm.vmName
                 $DestPath = $Vm.destPath
                 $OsVhd = $Vm.osVHD
-                $OsVersion = $Vm.osVersion
-                $VmIp = $Vm.vmIP
-                $VmSubnetMask = $Vm.vmSubnetMask
-                $Gateway = $Vm.gateway
-                $DnsIp1 = $Vm.dnsIP1
+                $OsVersion = $Vm.osVersion                
                 $VmSwitch = $Vm.vSwitchName
                 $Memory = $Vm.memory
                 $CPU = $Vm.vCpu
                 $VlanId = $Vm.vlanID
+
+                # unattend.xml Variables
+                $VmIp = $Vm.vmIP
+                $VmSubnetMask = Convert-RvNetSubnetMaskClassesToCidr $Vm.vmSubnetMask
+                $Gateway = $Vm.gateway
+                $DnsIp1 = $Vm.dnsIP1
 
                 $newSystemVHDFolder = "$($DestPath)\$($VmName)"
                 $newSystemVHDPath = "$($newSystemVHDFolder)\$($VMName)_OS.vhdx"
@@ -33,25 +35,12 @@ Configuration DeployVM
                     DestinationPath = $newSystemVHDFolder
                     Ensure = 'Present'
                 }
-                
-                File "$($NodeName)_$($VmName)_SystemDisk" {
-                    SourcePath = "$OsVhd"
-                    DestinationPath = $newSystemVHDPath      
-                    Type = "File"
-                    Ensure = "Present"
-                    DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
-                }
-                
-                $sourceUnattendXmlContent = Get-Content "$(Split-Path -parent $PSCommandPath)\templates\unattend_$($OsVersion).xml"
-                $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!ComputerName",$VmName)
-                $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!IPAddress",$VmIp)
-                $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!SubnetMask", `
-                    (Convert-RvNetSubnetMaskClassesToCidr $VmSubnetMask))
-                $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!DefaultGateway",$Gateway)
-                $sourceUnattendXmlContent = $sourceUnattendXmlContent.Replace("!DnsIP1",$DnsIp1)
 
+                # Generate content of the unattend.xml from the template
+                $sourceUnattendXmlContent = Get-Content "$(Split-Path -parent $PSCommandPath)\templates\unattend_$($OsVersion).xml"
+                $sourceUnattendXmlContent = $ExecutionContext.InvokeCommand.ExpandString($sourceUnattendXmlContent)
                 $newUnattendXmlPath = "$($newSystemVHDFolder)\unattend.xml"
-                
+
                 File "$($NodeName)_$($VmName)_UnattendedFile" {
                     Ensure = "Present"
                     Type = "File"
@@ -60,6 +49,13 @@ Configuration DeployVM
                     DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
                 }
                 
+                File "$($NodeName)_$($VmName)_SystemDisk" {
+                    SourcePath = "$OsVhd"
+                    DestinationPath = $newSystemVHDPath      
+                    Type = "File"
+                    Ensure = "Present"
+                    DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
+                }                
                 
                 xVhdFile "$($NodeName)_$($VmName)_CopyUnattendxml"
                 {
@@ -68,7 +64,7 @@ Configuration DeployVM
                                     SourcePath = $newUnattendXmlPath
                                     DestinationPath = "\Windows\Panther\unattend.xml"
                                 }
-                    DependsOn = "[File]$($NodeName)_$($VmName)_SystemDisk"
+                    DependsOn = "[File]$($NodeName)_$($VmName)_SystemDisk","[File]$($NodeName)_$($VmName)_UnattendedFile"
                 }
                 
                 xVMHyperV "$($NodeName)_$($VmName)_NewVM"

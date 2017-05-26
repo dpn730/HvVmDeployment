@@ -23,9 +23,9 @@ $MyConfig =
 }
 
 .'.\lib\Convert-RvNetIpAddressToInt64.ps1'
-.'.\DeployVM.ps1'
+.'.\Hyper-V_Configuration.ps1'
 
-DeployVM -ConfigurationData $MyConfig
+Hyper-V_Configuration -ConfigurationData $MyConfig
 
 
-Start-DscConfiguration -Wait -Force -Verbose -ComputerName localhost -Path $PSScriptRoot\DeployVM
+Start-DscConfiguration -Wait -Force -Verbose -ComputerName localhost -Path $PSScriptRoot\Hyper-V_Configuration

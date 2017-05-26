@@ -30,7 +30,7 @@
     <settings pass="specialize">
          <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
              language="neutral" versionScope="nonSxS">
-            <ComputerName>!ComputerName</ComputerName>
+            <ComputerName>$VmName</ComputerName>
             <ProductKey>HKRN4-6Q3CC-D389F-M7XBQ-BHBKV</ProductKey>
             <RegisteredOwner>Dimension Data</RegisteredOwner>
             <RegisteredOrganization>HMAIL</RegisteredOrganization>
@@ -47,13 +47,13 @@
                     </Ipv6Settings>
                     <Identifier>Ethernet</Identifier>
                     <UnicastIpAddresses>
-                        <IpAddress wcm:action="add" wcm:keyValue="1">!IPAddress/!SubnetMask</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="1">$VmIp/$VmSubnetMask</IpAddress>
                     </UnicastIpAddresses>
                     <Routes>
                         <Route wcm:action="add">
                             <Identifier>1</Identifier>
                             <Prefix>0.0.0.0/0</Prefix>
-                            <NextHopAddress>!DefaultGateway</NextHopAddress>
+                            <NextHopAddress>$Gateway</NextHopAddress>
                         </Route>
                     </Routes>
                 </Interface>
@@ -66,7 +66,7 @@
                     <Identifier>Ethernet</Identifier>
                     <DNSDomain></DNSDomain>
                     <DNSServerSearchOrder>
-                        <IpAddress wcm:action="add" wcm:keyValue="1">!DnsIP1</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="1">$DnsIp1</IpAddress>
                     </DNSServerSearchOrder>
                     <EnableAdapterDomainNameRegistration>true</EnableAdapterDomainNameRegistration>
                     <DisableDynamicUpdate>false</DisableDynamicUpdate>

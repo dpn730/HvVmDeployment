@@ -62,7 +62,7 @@ Configuration Hyper-V_Configuration
                 $VmDependsOn += "[File]$($NodeName)_$($VmName)_SystemDisk" 
 
                 # Check if VM exists already and set the state
-                $(Get-VM | select Name,State).foreach({
+                $(Get-VM -ComputerName $NodeName | select Name,State).foreach({
                     if($_.Name -eq $VmName) {
                         $VmState = $_.State
                     }
@@ -150,10 +150,11 @@ Configuration Hyper-V_Configuration
                         Start-VM -VMName $using:VmName
                     }
                     TestScript = {
-                        Write-Host "$($using:VmName) dynamic memory enabled: $($(Get-VMMemory -VMName $using:VmName).DynamicMemoryEnabled)"
-                        Write-Host "($using:VmName) state is $($(Get-VM -VMName $using:VmName).State)."
-                        return !($(Get-VMMemory -VMName "$($using:VmName)").DynamicMemoryEnabled `
-                            -and $(Get-VM -VMName $using:VmName).State -eq 'Off')
+                        $dynamicMemoryEnabled = $(Get-VMMemory -VMName $using:VmName).DynamicMemoryEnabled
+                        $vmTestState = $(Get-VM -VMName $using:VmName).State
+                        Write-Host "$($using:VmName) dynamic memory enabled: $($dynamicMemoryEnabled)"
+                        Write-Host "($using:VmName) state is $($vmTestState)."
+                        return !($dynamicMemoryEnabled -and $vmTestState -eq 'Off')
                     }
                     GetScript = {
                         $(Get-VMMemory -VMName $using:VmName).DynamicMemoryEnabled

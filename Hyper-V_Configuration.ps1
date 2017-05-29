@@ -34,6 +34,8 @@ Configuration Hyper-V_Configuration
                 $VlanId = $Vm.vlanID
                 $DataVhdSize = $Vm.dataVHDSize
                 $VmDependsOn = @()
+                $VmState = 'Off'
+                $NewVm = $true
 
                 # unattend.xml Variables
                 $VmIp = $Vm.vmIP
@@ -43,8 +45,7 @@ Configuration Hyper-V_Configuration
 
                 $newSystemVHDFolder = "$($DestPath)\$($VmName)"
                 $osVHDPath = "$($newSystemVHDFolder)\$($VMName)_OS.vhdx"
-                $dataVHDPath = "$($newSystemVHDFolder)\$($VMName)_DATA.vhdx"
-                
+                $dataVHDPath = "$($newSystemVHDFolder)\$($VMName)_DATA.vhdx"                
 
                 File "$($NodeName)_$($VmName)_Folder" {
                     Type = 'Directory'
@@ -61,9 +62,15 @@ Configuration Hyper-V_Configuration
                 }
                 $VmDependsOn += "[File]$($NodeName)_$($VmName)_SystemDisk" 
 
-                # Check if OS disk was already attached before attempting to copy unattend.xml
-                if($(Test-Path -Path $osVHDPath) -and !($(Get-VHD $osVHDPath).Attached)){
-                     
+                # Check if VM exists already and set the state
+                $(Get-VM | select Name,State).foreach({
+                    if($_.Name -eq $VmName) {
+                        $VmState = $_.State
+                    }
+                })
+
+                # If VM is not running, prepare unattend.xml file
+                if($VmState -eq "Off"){
                      # Generate content of the unattend.xml from the template
                     $sourceUnattendXmlContent = Get-Content "$(Split-Path -parent $PSCommandPath)\templates\unattend_$($OsVersion).xml"
                     $sourceUnattendXmlContent = $ExecutionContext.InvokeCommand.ExpandString($sourceUnattendXmlContent)
@@ -98,7 +105,7 @@ Configuration Hyper-V_Configuration
                     Generation       = 'vhdx'
                     MaximumSizeBytes = $([int] $DataVhdSize * $gigabyte)
                     DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
-                }
+                }               
 
                 xVMHyperV "$($NodeName)_$($VmName)_NewVM"
                 {
@@ -106,7 +113,7 @@ Configuration Hyper-V_Configuration
                     Name            = $VmName
                     VhdPath         = $osVHDPath
                     SwitchName      = $VmSwitch
-                    State           = "Running"
+                    State           = $VmState
                     Path            = $newSystemVHDFolder
                     Generation      = 2
                     StartupMemory   = $([int] $Memory * $gigabyte)
@@ -141,10 +148,13 @@ Configuration Hyper-V_Configuration
                 {
                     SetScript = { 
                         Set-VMMemory -VMName $using:VmName -DynamicMemoryEnabled $false
+                        Start-VM -VMName $using:VmName
                     }
                     TestScript = {
-                        Write-Host "$($using:VmName) dynamic memory enabled: $($(Get-VMMemory -VMName "$($using:VmName)").DynamicMemoryEnabled)"
-                        return !($(Get-VMMemory -VMName "$($using:VmName)").DynamicMemoryEnabled)
+                        Write-Host "$($using:VmName) dynamic memory enabled: $($(Get-VMMemory -VMName $using:VmName).DynamicMemoryEnabled)"
+                        Write-Host "($using:VmName) state is $($(Get-VM -VMName $using:VmName).State)."
+                        return !($(Get-VMMemory -VMName "$($using:VmName)").DynamicMemoryEnabled `
+                            -and $(Get-VM -VMName $using:VmName).State -eq 'Off')
                     }
                     GetScript = {
                         $(Get-VMMemory -VMName $using:VmName).DynamicMemoryEnabled
@@ -155,16 +165,15 @@ Configuration Hyper-V_Configuration
                 Script "$($NodeName)_$($VmName)_FormatDataDisk"
                 {
                     SetScript = { 
-                        Get-VHD -Path $using:dataVHDPath | Mount-VHD -Passthru `
-                            | Initialize-Disk -Passthru | New-Partition -AssignDriveLetter -UseMaximumSize `
+                        Get-VHD -Path $using:dataVHDPath | Mount-VHD -Passthru -NoDriveLetter `
+                            | Initialize-Disk -Passthru | New-Partition -UseMaximumSize `
                             | Format-Volume -FileSystem NTFS -Confirm:$false -NewFileSystemLabel "$($using:VmName)_DATA" -Force
 
                         Dismount-VHD -Path $using:dataVHDPath -Confirm:$false
                     }
                     TestScript = {
                         $found = $false
-                        if(!($(Get-VM $using:VmName).State -eq "Running" `
-                                -and $(Get-VHD $using:dataVHDPath).Attached)) {                            
+                        if(!$(Get-VHD $using:dataVHDPath).Attached) {                            
                             
                             Mount-VHD -Path $using:dataVHDPath -Confirm:$false -NoDriveLetter
                             $(Get-Volume).foreach({
@@ -198,13 +207,20 @@ Configuration Hyper-V_Configuration
                         Add-VMHardDiskDrive -VMName $using:VmName -Path $using:dataVHDPath
                     }
                     TestScript = {
-                        if($(Get-VHD $using:dataVHDPath).Attached) {
+                        $found = $false
+                        $(Get-VMHardDiskDrive -VMName $using:VmName).foreach({
+                            if($_.Path -eq $using:dataVHDPath) {
+                                $found = $true
+                            }
+                        })
+
+                        if($found) {
                             Write-Host "$($using:dataVHDPath) is already attached."
                         }
                         else {
                             Write-Host "$($using:dataVHDPath) has not been attached."
                         }
-                        return $(Get-VHD $using:dataVHDPath).Attached
+                        return $found
                     }
                     GetScript = {
                         

@@ -35,7 +35,6 @@ Configuration Hyper-V_Configuration
                 $DataVhdSize = $Vm.dataVHDSize
                 $VmDependsOn = @()
                 $VmState = 'Off'
-                $NewVm = $true
 
                 # unattend.xml Variables
                 $VmIp = $Vm.vmIP

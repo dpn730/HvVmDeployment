@@ -1,3 +1,2 @@
-vmName,vSwitchName,osVersion,osVHD,destPath,vmIP,vmSubnetMask,gateway,dnsIP1,dnsIP2,memory,vCPU,machineOU,vlanID
-DPNTestVM,VM_External_VNIC,2016,c:\Users\David Paul Ngo\Downloads\Windows2016_Golden.vhdx,C:\Users\David Paul Ngo\Virtual Machines,192.168.0.14,255.255.255.0,192.168.0.11,192.168.0.1,,2,4,,30
-KyawTestVM,VM_External_VNIC,2016,c:\Users\David Paul Ngo\Downloads\Windows2016_Golden.vhdx,C:\Users\David Paul Ngo\Virtual Machines,192.168.0.15,255.255.255.0,192.168.0.11,192.168.0.1,,2,4,,20
+vmName,vSwitchName,osVersion,osVHD,dataVHDSize,destPath,vmIP,vmSubnetMask,gateway,dnsIP1,dnsIP2,memory,vCPU,machineOU,vlanID
+DPNTestVM,VM_External_VNIC,2016,c:\Users\David Paul Ngo\Downloads\Windows2016_Golden.vhdx,10,C:\Users\David Paul Ngo\Virtual Machines,192.168.0.14,255.255.255.0,192.168.0.11,192.168.0.1,,2,4,,30

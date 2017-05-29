@@ -1,8 +1,9 @@
 param (
-
     [Parameter(Mandatory)]
-    [ValidateScript({Test-Path -Path $_})]
-    [string] $InputFilePath = '.\input\localhost.csv'
+    [string] $HyperVHostName,
+    [Parameter(Mandatory)]
+    [ValidateScript({$(Test-Path -Path $_) -and $_.ToLower().EndsWith('.csv')})]
+    [string] $VmDataFilePath
 )
 
 if (!(Test-Path -Path 'C:\Program Files\WindowsPowerShell\Modules\xHyper-V')) {
@@ -10,13 +11,15 @@ if (!(Test-Path -Path 'C:\Program Files\WindowsPowerShell\Modules\xHyper-V')) {
     Break
 }
 
-$inputCsv = Import-Csv $InputFilePath
+$inputCsv = Import-Csv $VmDataFilePath
  
+
+
 $MyConfig = 
 @{
     AllNodes = @(
         @{
-            NodeName = 'localhost'
+            NodeName = $HyperVHostName
             VmData = $inputCsv
         }
     )

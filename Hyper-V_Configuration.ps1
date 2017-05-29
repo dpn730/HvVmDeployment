@@ -9,8 +9,7 @@ Configuration Hyper-V_Configuration
             Node $_.NodeName {
             $NodeName = $Node.NodeName
             $VmData = $Node.VmData
-
-            <# 
+            
             WindowsFeature "$($NodeName)_Hyper-V"
             {
                 Ensure = 'Present'
@@ -21,8 +20,7 @@ Configuration Hyper-V_Configuration
                 Ensure='Present'
                 Name='Hyper-V-Powershell'
                 DependsOn = "[WindowsFeature]$($NodeName)_Hyper-V"
-            }
-            #>
+            }            
 
             foreach($Vm in $VmData) {
                 Write-Host $Vm

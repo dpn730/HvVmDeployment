@@ -31,4 +31,4 @@ $MyConfig =
 Hyper-V_Configuration -ConfigurationData $MyConfig
 
 
-Start-DscConfiguration -Wait -Force -Verbose -ComputerName localhost -Path $PSScriptRoot\Hyper-V_Configuration
+Start-DscConfiguration -Wait -Force -Verbose -ComputerName $HyperVHostName -Path $PSScriptRoot\Hyper-V_Configuration

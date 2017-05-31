@@ -13,7 +13,16 @@ if (!(Test-Path -Path 'C:\Program Files\WindowsPowerShell\Modules\xHyper-V')) {
 
 $inputCsv = Import-Csv $VmDataFilePath
  
+foreach($item in $inputCsv) {
+    $dataDiskJson = $(ConvertFrom-Json $item.dataDisks).dataDisks
+    $item.dataDisks = $dataDiskJson
 
+    $ipConfigJson = $(ConvertFrom-Json $item.ipConfig).ipConfig
+    $item.ipConfig = $ipConfigJson
+
+    $dnsIpJson = $(ConvertFrom-Json $item.dnsIp).dnsIp
+    $item.dnsIp = $dnsIpJson
+}
 
 $MyConfig = 
 @{
@@ -24,6 +33,7 @@ $MyConfig =
         }
     )
 }
+
 
 .'.\lib\Convert-RvNetIpAddressToInt64.ps1'
 .'.\Hyper-V_Configuration.ps1'

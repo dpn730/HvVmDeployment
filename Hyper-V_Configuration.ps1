@@ -151,7 +151,7 @@ Configuration Hyper-V_Configuration
                             if(!$(Get-VHD $using:dataVhdPath).Attached) {                                                        
                                 Mount-VHD -Path $using:dataVhdPath -Confirm:$false -NoDriveLetter
                                 $(Get-Volume).foreach({
-                                    if($_.FileSystemLabel -eq "$($using:VmName)_DATA") {
+                                    if($_.FileSystemLabel -eq "$($using:VmName)_$($using:dataVolumeLabel)") {
                                         Write-Host "$($using:dataVhdPath) has already been initialized."
                                         $found = $true
                                     }

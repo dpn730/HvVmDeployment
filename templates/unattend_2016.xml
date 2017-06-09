@@ -93,7 +93,7 @@
                 </RunSynchronousCommand>
                 <RunSynchronousCommand wcm:action="add">
                     <Order>2</Order>
-                    <Path>netsh advfirewall firewall set rule group="remote desktop" new enable=Yes</Path>
+                    <Path>netsh advfirewall firewall set rule group="Remote Desktop" new enable=Yes</Path>
                 </RunSynchronousCommand>
             </RunSynchronous>
         </component>

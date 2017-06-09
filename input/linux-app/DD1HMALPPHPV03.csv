@@ -1,2 +1,0 @@
-vmName,osFamily,osVersion,destPath,osVhd,dataDisks,ipConfig,dnsIp,memory,vCPU,machineOU,generation
-DD1HMALPVSVC03,redhat,7.1,G:\Hyper-V,G:\Hyper-V\VHDx\centos-1.0.vhdx,"{""dataDisks"": []}","{""ipConfig"":{""vSwitchName"": ""vSwitch_HDC1_TSZ"", ""ipAddress"": ""10.244.133.99"", ""subnetMask"": ""255.255.255.0"", ""defaultGateway"": ""10.244.133.1"", ""vlanID"": ""2669""}}","{""dnsIP"":[{""ip"":""10.244.133.33""}]}",8,2,,1

@@ -31,7 +31,7 @@
          <component name="Microsoft-Windows-Shell-Setup" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35"
              language="neutral" versionScope="nonSxS">
             <ComputerName>$VmName</ComputerName>
-            <ProductKey>HKRN4-6Q3CC-D389F-M7XBQ-BHBKV</ProductKey>
+            <ProductKey>TMJ3Y-NTRTM-FJYXT-T22BY-CWG3J</ProductKey>
             <RegisteredOwner>Dimension Data</RegisteredOwner>
             <RegisteredOrganization>HMAIL</RegisteredOrganization>
         </component>
@@ -66,7 +66,10 @@
                     <Identifier>Ethernet</Identifier>
                     <DNSDomain></DNSDomain>
                     <DNSServerSearchOrder>
-                        <IpAddress wcm:action="add" wcm:keyValue="1">$DnsIp1</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="1">$($DnsIps[0])</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="2">$($DnsIps[1])</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="3">$($DnsIps[2])</IpAddress>
+                        <IpAddress wcm:action="add" wcm:keyValue="4">$($DnsIps[3])</IpAddress>
                     </DNSServerSearchOrder>
                     <EnableAdapterDomainNameRegistration>true</EnableAdapterDomainNameRegistration>
                     <DisableDynamicUpdate>false</DisableDynamicUpdate>
@@ -93,19 +96,6 @@
                     <Path>netsh advfirewall firewall set rule group="remote desktop" new enable=Yes</Path>
                 </RunSynchronousCommand>
             </RunSynchronous>
-        </component>
-        <component name="Microsoft-Windows-UnattendedJoin" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" 
-            language="neutral" versionScope="nonSxS">
-            <Identification>
-                <Credentials>
-                    <Domain>hmail.sg</Domain>
-                    <Password>P@ssw0rd01!</Password>
-                    <Username>psadmin3</Username>
-                </Credentials>
-                <JoinDomain>hmail.sg</JoinDomain>
-                <!-- <MachineObjectOU>$MachineOU</MachineObjectOU> -->
-                <UnsecureJoin>False</UnsecureJoin>
-            </Identification>
         </component>
     </settings>
 </unattend>

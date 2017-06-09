@@ -44,7 +44,13 @@ Configuration Hyper-V_Configuration
             $VmIp = $IpConfig.ipAddress
             $VmSubnetMask = Convert-RvNetSubnetMaskClassesToCidr $IpConfig.subnetMask
             $Gateway = $IpConfig.defaultGateway
-            $DnsIp1 = $Vm.dnsIP[0].ip
+            $DnsIps = @("","","","") 
+            
+            $dnsCount = 0
+            foreach($dnsIP in $Vm.dnsIP) {
+                $DnsIps[$dnsCount] = $dnsIP.ip
+                $dnsCount++
+            }
 
             $newSystemVhdFolder = "$($DestPath)\$($VmName)"
             $osVhdPath = "$($newSystemVhdFolder)\$($VMName)_OS.vhdx"                

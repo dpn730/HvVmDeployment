@@ -8,7 +8,7 @@ param (
 
 if (!(Test-Path -Path 'C:\Program Files\WindowsPowerShell\Modules\xHyper-V')) {
     Write-Host "ERROR: In order to execute this script, xHyper-V module must be installed in the system." -ForegroundColor Red
-    Break
+    exit
 }
 
 $inputCsv = Import-Csv $VmDataFilePath
@@ -22,6 +22,11 @@ foreach($item in $inputCsv) {
 
     $dnsIpJson = $(ConvertFrom-Json $item.dnsIp).dnsIp
     $item.dnsIp = $dnsIpJson
+
+    if($dnsIpJson.length -gt 4) {
+        Write-Host "ERROR: $($item.VmName) cannot have more than 4 Dns Ips" -ForegroundColor Red
+        exit
+    }
 }
 
 $MyConfig = 

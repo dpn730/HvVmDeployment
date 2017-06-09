@@ -8,18 +8,28 @@ Configuration Hyper-V_Configuration
     Node $AllNodes.NodeName 
     {
         $NodeName = $Node.NodeName
-        $VmData = $Node.VmData
-        
-        WindowsFeature "$($NodeName)_Hyper-V" {
-            Ensure = 'Present'
-            Name   = 'Hyper-V'
+        $VmData = $Node.VmData         
+        $vSwitchData = $Node.vSwitchData
+
+        foreach($vSwitch in $vSwitchData) {
+            if($vSwitch.vSwitchType -eq 'External') {
+                xVMSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
+                    Ensure = 'Present'
+                    Name = $vSwitch.vSwitchName
+                    Type = $vSwitch.vSwitchType
+                    NetAdapterName = $vSwitch.NetAdapterName
+                    AllowManagementOS = [bool] $vSwitch.AllowManagementOS
+                 }
+            }
+            else {
+                xVMSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
+                    Ensure = 'Present'
+                    Name = $vSwitch.vSwitchName
+                    Type = $vSwitch.vSwitchType
+                    AllowManagementOS = [bool] $vSwitch.AllowManagementOS
+                 }
+            }          
         }
-        
-        WindowsFeature "$($NodeName)_Hyper-V-Powershell" {
-            Ensure='Present'
-            Name='Hyper-V-Powershell'
-            DependsOn = "[WindowsFeature]$($NodeName)_Hyper-V"
-        }            
 
         foreach($Vm in $VmData) {
             Write-Host $Vm

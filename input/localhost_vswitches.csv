@@ -1,0 +1,3 @@
+vSwitchName,vSwitchType,NetAdapterName,AllowManagementOS
+VM_External_NIC,External,Wi-Fi,True
+VM_Internal_NIC,Internal,,False

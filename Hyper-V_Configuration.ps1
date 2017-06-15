@@ -1,3 +1,6 @@
+.'.\lib\Convert-RvNetIpAddressToInt64.ps1'
+.'.\lib\Get-UnattendXmlFilename.ps1'
+
 Configuration Hyper-V_Configuration
 {
     Import-DscResource -ModuleName PSDesiredStateConfiguration
@@ -11,6 +14,7 @@ Configuration Hyper-V_Configuration
         $VmData = $Node.VmData         
         $vSwitchData = $Node.vSwitchData
 
+        # Configure vSwitches if provided
         foreach($vSwitch in $vSwitchData) {
             if($vSwitch.vSwitchType -eq 'External') {
                 xVMSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
@@ -31,6 +35,7 @@ Configuration Hyper-V_Configuration
             }          
         }
 
+        # Configure VMs if provided
         foreach($Vm in $VmData) {
             Write-Host $Vm
             $VmName = $Vm.vmName
@@ -38,6 +43,8 @@ Configuration Hyper-V_Configuration
             $OsFamily = $Vm.osFamily
             $OsVhd = $Vm.osVhd
             $OsVersion = $Vm.osVersion                
+            $OsEdition = $Vm.osEdition
+            $DomainJoin = [bool] $Vm.domainJoin
             $IpConfig = $Vm.ipConfig
             $Memory = $Vm.memory
             $CPU = $Vm.vCpu
@@ -91,7 +98,8 @@ Configuration Hyper-V_Configuration
             # If VM has not been created, prepare unattend.xml file
             if($VmExists -eq $false -and $OsFamily -eq "windows") {
                 # Generate content of the unattend.xml from the template
-                $sourceUnattendXmlContent = Get-Content "$(Split-Path -parent $PSCommandPath)\templates\unattend_$($OsVersion).xml"
+                $sourceUnattendXmlFilename = Get-UnattendXmlFilename -OsVersion $OsVersion -OsEdition $OsEdition -DomainJoin $DomainJoin
+                $sourceUnattendXmlContent = Get-Content "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"
                 $sourceUnattendXmlContent = $ExecutionContext.InvokeCommand.ExpandString($sourceUnattendXmlContent)
                 $newUnattendXmlPath = "$($newSystemVhdFolder)\unattend.xml"
                 

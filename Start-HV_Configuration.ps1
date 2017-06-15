@@ -50,8 +50,6 @@ $MyConfig =
     )
 }
 
-
-.'.\lib\Convert-RvNetIpAddressToInt64.ps1'
 .'.\Hyper-V_Configuration.ps1'
 
 Hyper-V_Configuration -ConfigurationData $MyConfig

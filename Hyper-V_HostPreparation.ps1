@@ -23,5 +23,12 @@ Configuration Hyper-V_HostPreparation
             SourcePath = "$($PSScriptRoot)\prerequisites\xHyper-V"
             Recurse = $true
         }
+
+        File "$($NodeName)_xDPN-Hyper-V_Module" {
+            Ensure = 'Present'
+            DestinationPath = "$($env:ProgramFiles)\WindowsPowershell\Modules\xDPN-Hyper-V"
+            SourcePath = "$($PSScriptRoot)\prerequisites\xDPN-Hyper-V"
+            Recurse = $true
+        }
     }
 }

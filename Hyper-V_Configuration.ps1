@@ -5,6 +5,7 @@ Configuration Hyper-V_Configuration
 {
     Import-DscResource -ModuleName PSDesiredStateConfiguration
     Import-DscResource -Module xHyper-V
+    Import-DscResource -Module xDPN-Hyper-V
 
     $gigabyte = 1073741824
 
@@ -17,16 +18,7 @@ Configuration Hyper-V_Configuration
         # Configure vSwitches if provided
         foreach($vSwitch in $vSwitchData) {
             if($vSwitch.vSwitchType -eq 'External') {
-                xVMSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
-                    Ensure = 'Present'
-                    Name = $vSwitch.vSwitchName
-                    Type = $vSwitch.vSwitchType
-                    NetAdapterName = $vSwitch.NetAdapterName
-                    AllowManagementOS = [bool] $vSwitch.AllowManagementOS
-                 }
-            }
-            else {
-                xVMSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
+                xVmSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
                     Ensure = 'Present'
                     Name = $vSwitch.vSwitchName
                     Type = $vSwitch.vSwitchType
@@ -55,7 +47,7 @@ Configuration Hyper-V_Configuration
             $VmGeneration = $Vm.generation
 
             # Ip Configuration Variables
-            $VmSwitch = $IpConfig.vSwitchName
+            $VmSwitchName = $IpConfig.vSwitchName
             $VlanId = $IpConfig.vlanID
             # unattend.xml Variables
             $VmIp = $IpConfig.ipAddress
@@ -128,7 +120,7 @@ Configuration Hyper-V_Configuration
                 Ensure          = 'Present'
                 Name            = $VmName
                 VhdPath         = $osVhdPath
-                SwitchName      = $VmSwitch
+                SwitchName      = $VmSwitchName
                 State           = $VmState
                 Path            = $newSystemVhdFolder
                 Generation      = $VmGeneration
@@ -144,7 +136,7 @@ Configuration Hyper-V_Configuration
                 $dataVhdPath = "$($newSystemVhdFolder)\$($VMName)_$($disk.volumeLabel).vhdx"
                 $dataVhdSize = $disk.size
                 $dataVhdDriveLetter = $disk.driveLetter
-                $dataVolumeLabel = $disk.volumeLabel
+                $dataVolumeLabel = "$($VmName)_$($disk.volumeLabel)"
                 $attachDiskDependency = @("[xVMHyperV]$($NodeName)_$($VmName)_NewVM")
 
                 xVHD "$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)"
@@ -159,115 +151,36 @@ Configuration Hyper-V_Configuration
                 $attachDiskDependency += "[xVHD]$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)"        
                 
                 if($OsFamily -eq "windows") {
-                    Script "$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)"
+                    xVHDFormat "$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)" 
                     {
-                        SetScript = { 
-                            $disk = Get-VHD -Path $using:dataVhdPath | Mount-VHD -Passthru -NoDriveLetter
-                            $partition = $disk | Initialize-Disk -Passthru | New-Partition -UseMaximumSize
-                            $partition | Format-Volume -FileSystem NTFS -Confirm:$false -NewFileSystemLabel `
-                                "$($using:VmName)_$($using:dataVolumeLabel)" -Force
-
-                            $partition[0] | Set-Partition -NewDriveLetter $using:dataVhdDriveLetter
-                            Dismount-VHD -Path $using:dataVhdPath -Confirm:$false
-                        }
-                        TestScript = {
-                            $found = $false
-                            if(!$(Get-VHD $using:dataVhdPath).Attached) {                                                        
-                                Mount-VHD -Path $using:dataVhdPath -Confirm:$false -NoDriveLetter
-                                $(Get-Volume).foreach({
-                                    if($_.FileSystemLabel -eq "$($using:VmName)_$($using:dataVolumeLabel)") {
-                                        Write-Host "$($using:dataVhdPath) has already been initialized."
-                                        $found = $true
-                                    }
-                                })
-                                Dismount-VHD -Path $using:dataVhdPath -Confirm:$false
-                            
-                                if(!$found) {
-                                    Write-Host "$($using:dataVhdPath) has not been initialized."                                    
-                                }                                
-                            }
-                            else {
-                                Write-Host "$($using:dataVhdPath) has already been attached and $($using:VmName) is running, unable to mount VHD."
-                                $found = $true
-                            }
-
-                            return $found
-                        }
-                        GetScript = {
-                            return $(Get-VHD $using:dataVhdPath).Path
-                        }
-                        DependsOn = "[xVHD]$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)"         
+                        NodeName = $NodeName
+                        VmName = $VmName
+                        DataVhdPath = $dataVhdPath
+                        VolumeLabel = $dataVolumeLabel
+                        DriveLetter = $dataVhdDriveLetter
+                        DependsOn = "[xVHD]$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)" 
                     }
-                    $attachDiskDependency += "[Script]$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)"
+                    
+                    $attachDiskDependency += "[xVHDFormat]$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)"                   
                 }
 
-                Script "$($NodeName)_$($VmName)_AttachDataDisk_$($dataVhdDriveLetter)"
+                xVMAttachVHD "$($NodeName)_$($VmName)_AttachDataDisk_$($dataVhdDriveLetter)" 
                 {
-                    SetScript = { 
-                        Add-VMHardDiskDrive -VMName $using:VmName -Path $using:dataVhdPath
-                    }
-                    TestScript = {
-                        $found = $false
-                        foreach($disk in $(Get-VMHardDiskDrive -VMName $using:VmName)){
-                            if($disk.Path -eq $using:dataVhdPath) {
-                                $found = $true
-                            }
-                        }
-
-                        if($found) {
-                            Write-Host "$($using:dataVhdPath) is already attached."
-                        }
-                        else {
-                            Write-Host "$($using:dataVhdPath) has not been attached."
-                        }
-                        return $found
-                    }
-                    GetScript = {
-                        
-                        return $using:dataVhdPath
-                    }
-                    DependsOn =  $attachDiskDependency        
+                    NodeName = $NodeName
+                    VmName = $VmName
+                    DataVhdPath = $dataVhdPath
+                    DependsOn = $attachDiskDependency
                 }
             }
-    
-            Script "$($NodeName)_$($VmName)_VlanID" {
-                SetScript = { 
-                    foreach($vNic in $(Get-VMNetworkAdapter -VMName $using:VmName)) {
-                        if($vNic.SwitchName -eq $using:VmSwitch) {
-                            $vNic | Set-VMNetworkAdapterVlan -Access -VlanId $using:VlanId
-                        }
-                    }
-                }
-                TestScript = {
-                    $targetVnic = $null
-                    foreach($vNic in $(Get-VMNetworkAdapter -VMName $using:VmName)) {
-                        if($vNic.SwitchName -eq $using:VmSwitch) {
-                            $targetVnic = $vNic
-                        }
-                    }
-
-                    if($targetVnic -ne $null) {
-                        if($($targetVnic | Get-VMNetworkAdapterVlan).AccessVlanId -ne $using:VlanId) {
-                            Write-Host "Vlan ID of $($using:targetVnic.Name) for $($using:VmName) is not $($using:VlanId)"
-                            return $false
-                        }
-                        else {
-                            Write-Host "Vlan ID of $($using:targetVnic.Name) for $($using:VmName) is already $($using:VlanId)"
-                            return $true
-                        }
-                    }
-                }
-                GetScript = {
-                    $targetVnic = $null
-                    foreach($vNic in $(Get-VMNetworkAdapter -VMName $using:VmName)) {
-                        if($vNic.SwitchName -eq $using:VmSwitch) {
-                            $targetVnic = $vNic
-                        }
-                    }
-                    return $($targetVnic | Get-VMNetworkAdapterVlan).AccessVlanId
-                }
-                DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"         
-            }
+            
+            xVMSwitchVlanId "$($NodeName)_$($VmName)_VlanID" 
+            {
+                NodeName = $NodeName
+                VmName = $VmName
+                VmSwitchName = $VmSwitchName
+                VlanId = $VlanId
+                DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+            } 
         }     
     }
 }

@@ -6,7 +6,7 @@ Configuration xVHDFormat {
         [string] $VmName,
 
         [Parameter(Mandatory)]
-        [ValidateScript({$(Test-Path -Path "$($_)") -and ($_.ToLower().EndsWith('.vhd') `
+        [ValidateScript({$(Test-Path -Path "$($_)" -IsValid) -and ($_.ToLower().EndsWith('.vhd') `
             -or  $_.ToLower().EndsWith('.vhdx'))})]
         [string] $DataVHDPath,
         

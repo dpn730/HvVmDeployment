@@ -14,7 +14,7 @@ function Get-UnattendXmlFilename () {
     $registry = Import-Csv $UnattendRegistryFile
     foreach ($entry in $registry) {
         if($entry.osEdition -eq $OsEdition -and $entry.osVersion -eq $OsVersion `
-            -and $([bool] $entry.domainJoin) -eq $DomainJoin) {
+            -and $([System.Convert]::ToBoolean($entry.domainJoin)) -eq $DomainJoin) {
                 $returnValue = $entry.fileName
             }
     }

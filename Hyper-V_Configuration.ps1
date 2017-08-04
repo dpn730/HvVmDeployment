@@ -94,7 +94,8 @@ Configuration Hyper-V_Configuration
             if($VmExists -eq $false -and $OsFamily -eq "windows") {
                 # Generate content of the unattend.xml from the template
                 $sourceUnattendXmlFilename = Get-UnattendXmlFilename -OsVersion $OsVersion -OsEdition $OsEdition -DomainJoin $DomainJoin
-                $sourceUnattendXmlContent = Get-Content "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"
+		Write-Host "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"                
+		$sourceUnattendXmlContent = Get-Content "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"
                 $sourceUnattendXmlContent = $ExecutionContext.InvokeCommand.ExpandString($sourceUnattendXmlContent)
                 $newUnattendXmlPath = "$($newSystemVhdFolder)\unattend.xml"
                 

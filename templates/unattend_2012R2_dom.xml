@@ -15,7 +15,7 @@
             language="neutral" versionScope="nonSxS">
             <UserAccounts>
             <AdministratorPassword>
-                    <Value>DDhm@il20170421</Value>
+                    <Value>SomePassword</Value>
                     <PlainText>true</PlainText>
                 </AdministratorPassword>
             </UserAccounts>            
@@ -32,8 +32,8 @@
              language="neutral" versionScope="nonSxS">
             <ComputerName>$VmName</ComputerName>
             <ProductKey>Y4TGP-NPTV9-HTC2H-7MGQ3-DV4TW</ProductKey>
-            <RegisteredOwner>Dimension Data</RegisteredOwner>
-            <RegisteredOrganization>HMAIL</RegisteredOrganization>
+            <RegisteredOwner>Some Owner</RegisteredOwner>
+            <RegisteredOrganization>Some Organization</RegisteredOrganization>
         </component>
         <component name="Microsoft-Windows-TCPIP" processorArchitecture="amd64" publicKeyToken="31bf3856ad364e35" 
             language="neutral" versionScope="nonSxS">
@@ -101,12 +101,11 @@
             language="neutral" versionScope="nonSxS">
             <Identification>
                 <Credentials>
-                    <Domain>hmail.sg</Domain>
-                    <Password>P@ssw0rd01!</Password>
-                    <Username>psadmin3</Username>
+                    <Domain>somedomain.com</Domain>
+                    <Password>SomePassword</Password>
+                    <Username>SomeUser</Username>
                 </Credentials>
-                <JoinDomain>hmail.sg</JoinDomain>
-                <!-- <MachineObjectOU>$MachineOU</MachineObjectOU> -->
+                <JoinDomain>somedomain.com</JoinDomain>
                 <UnsecureJoin>False</UnsecureJoin>
             </Identification>
         </component>

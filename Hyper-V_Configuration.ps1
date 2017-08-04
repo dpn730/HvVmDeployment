@@ -22,6 +22,7 @@ Configuration Hyper-V_Configuration
                     Ensure = 'Present'
                     Name = $vSwitch.vSwitchName
                     Type = $vSwitch.vSwitchType
+                    NetAdapterName = $vSwitch.NetAdapterName
                     AllowManagementOS = [bool] $vSwitch.AllowManagementOS
                  }
             }          
@@ -30,13 +31,13 @@ Configuration Hyper-V_Configuration
         # Configure VMs if provided
         foreach($Vm in $VmData) {
             Write-Host $Vm
-            $VmName = $Vm.vmName
+            $VmName = $Vm.hostname
             $DestPath = $Vm.destPath
             $OsFamily = $Vm.osFamily
             $OsVhd = $Vm.osVhd
             $OsVersion = $Vm.osVersion                
             $OsEdition = $Vm.osEdition
-            $DomainJoin = [bool] $Vm.domainJoin
+            $DomainJoin = [System.Convert]::ToBoolean($Vm.domainJoin)
             $IpConfig = $Vm.ipConfig
             $Memory = $Vm.memory
             $CPU = $Vm.vCpu
@@ -64,12 +65,14 @@ Configuration Hyper-V_Configuration
             $newSystemVhdFolder = "$($DestPath)\$($VmName)"
             $osVhdPath = "$($newSystemVhdFolder)\$($VMName)_OS.vhdx"                
 
+            # Create VHD Folder
             File "$($NodeName)_$($VmName)_Folder" {
                 Type = 'Directory'
                 DestinationPath = $newSystemVhdFolder
                 Ensure = 'Present'
             }
 
+            # Create OS VHD from image
             File "$($NodeName)_$($VmName)_SystemDisk" {
                 SourcePath = "$OsVhd"
                 DestinationPath = $osVhdPath      
@@ -116,6 +119,7 @@ Configuration Hyper-V_Configuration
                 $VmDependsOn += "[xVhdFile]$($NodeName)_$($VmName)_CopyUnattendxml"
             }
 
+            # Create the Vm
             xVMHyperV "$($NodeName)_$($VmName)_NewVM" {
                 Ensure          = 'Present'
                 Name            = $VmName
@@ -173,14 +177,17 @@ Configuration Hyper-V_Configuration
                 }
             }
             
-            xVMSwitchVlanId "$($NodeName)_$($VmName)_VlanID" 
-            {
-                NodeName = $NodeName
-                VmName = $VmName
-                VmSwitchName = $VmSwitchName
-                VlanId = $VlanId
-                DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
-            } 
+            # Configure Vlan ID if provided
+            if(![string]::IsNullOrEmpty($VlanId)) {
+                xVMSwitchVlanId "$($NodeName)_$($VmName)_VlanID" 
+                {
+                    NodeName = $NodeName
+                    VmName = $VmName
+                    VmSwitchName = $VmSwitchName
+                    VlanId = $VlanId
+                    DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+                } 
+            }
         }     
     }
 }

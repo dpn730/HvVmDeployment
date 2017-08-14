@@ -16,20 +16,20 @@ Configuration Hyper-V_Configuration
         $vSwitchData = $Node.vSwitchData
 
         # Configure vSwitches if provided
-        foreach($vSwitch in $vSwitchData) {
-            if($vSwitch.vSwitchType -eq 'External') {
+        foreach ($vSwitch in $vSwitchData) {
+            if ($vSwitch.vSwitchType -eq 'External') {
                 xVmSwitch "$($NodeName)_$($vSwitch.vSwitchName)_vSwitch" {
-                    Ensure = 'Present'
-                    Name = $vSwitch.vSwitchName
-                    Type = $vSwitch.vSwitchType
-                    NetAdapterName = $vSwitch.NetAdapterName
+                    Ensure            = 'Present'
+                    Name              = $vSwitch.vSwitchName
+                    Type              = $vSwitch.vSwitchType
+                    NetAdapterName    = $vSwitch.NetAdapterName
                     AllowManagementOS = [bool] $vSwitch.AllowManagementOS
-                 }
+                }
             }          
         }
 
         # Configure VMs if provided
-        foreach($Vm in $VmData) {
+        foreach ($Vm in $VmData) {
             Write-Host $Vm
             $VmName = $Vm.hostname
             $DestPath = $Vm.destPath
@@ -48,16 +48,16 @@ Configuration Hyper-V_Configuration
             $VmGeneration = $Vm.generation
 
             # Ip Configuration Variables
-            $VmSwitchName = $IpConfig.vSwitchName
-            $VlanId = $IpConfig.vlanID
-            # unattend.xml Variables
-            $VmIp = $IpConfig.ipAddress
-            $VmSubnetMask = Convert-RvNetSubnetMaskClassesToCidr $IpConfig.subnetMask
-            $Gateway = $IpConfig.defaultGateway
-            $DnsIps = @("","","","") 
+            if ($IpConfig.length -gt 0) {            
+                # unattend.xml Variables
+                $VmIp = $IpConfig[0].ipAddress
+                $VmSubnetMask = Convert-RvNetSubnetMaskClassesToCidr $IpConfig[0].subnetMask
+                $Gateway = $IpConfig[0].defaultGateway
+            }
+            $DnsIps = @("", "", "", "") 
             
             $dnsCount = 0
-            foreach($dnsIP in $Vm.dnsIP) {
+            foreach ($dnsIP in $Vm.dnsIP) {
                 $DnsIps[$dnsCount] = $dnsIP.ip
                 $dnsCount++
             }
@@ -67,31 +67,31 @@ Configuration Hyper-V_Configuration
 
             # Create VHD Folder
             File "$($NodeName)_$($VmName)_Folder" {
-                Type = 'Directory'
+                Type            = 'Directory'
                 DestinationPath = $newSystemVhdFolder
-                Ensure = 'Present'
+                Ensure          = 'Present'
             }
 
             # Create OS VHD from image
             File "$($NodeName)_$($VmName)_SystemDisk" {
-                SourcePath = "$OsVhd"
+                SourcePath      = "$OsVhd"
                 DestinationPath = $osVhdPath      
-                Type = "File"
-                Ensure = "Present"
-                DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
+                Type            = "File"
+                Ensure          = "Present"
+                DependsOn       = "[File]$($NodeName)_$($VmName)_Folder"
             }
             $VmDependsOn += "[File]$($NodeName)_$($VmName)_SystemDisk" 
 
             # Check if VM exists already and set the state
-            foreach($hostedVm in $(Get-VM -ComputerName $NodeName | Select-Object Name,State)) {
-                if($hostedVm.Name -eq $VmName) {
+            foreach ($hostedVm in $(Get-VM -ComputerName $NodeName | Select-Object Name, State)) {
+                if ($hostedVm.Name -eq $VmName) {
                     $VmState = $hostedVm.State
                     $VmExists = $true
                 }
             }
 
             # If VM has not been created, prepare unattend.xml file
-            if($VmExists -eq $false -and $OsFamily -eq "windows") {
+            if ($VmExists -eq $false -and $OsFamily -eq "windows") {
                 # Generate content of the unattend.xml from the template
                 $sourceUnattendXmlFilename = Get-UnattendXmlFilename -OsVersion $OsVersion -OsEdition $OsEdition -DomainJoin $DomainJoin
                 $sourceUnattendXmlContent = Get-Content "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"
@@ -99,21 +99,20 @@ Configuration Hyper-V_Configuration
                 $newUnattendXmlPath = "$($newSystemVhdFolder)\unattend.xml"
                 
                 File "$($NodeName)_$($VmName)_UnattendedFile" {
-                    Ensure = "Present"
-                    Type = "File"
+                    Ensure          = "Present"
+                    Type            = "File"
                     DestinationPath = $newUnattendXmlPath
-                    Contents = [string] $sourceUnattendXmlContent
-                    DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
+                    Contents        = [string] $sourceUnattendXmlContent
+                    DependsOn       = "[File]$($NodeName)_$($VmName)_Folder"
                 } 
                 
-                xVhdFile "$($NodeName)_$($VmName)_CopyUnattendxml"
-                {
-                    VhdPath =  $osVhdPath
-                    FileDirectory =  MSFT_xFileDirectory {
-                                    SourcePath = $newUnattendXmlPath
-                                    DestinationPath = "\Windows\Panther\unattend.xml"
-                                }
-                    DependsOn = "[File]$($NodeName)_$($VmName)_SystemDisk","[File]$($NodeName)_$($VmName)_UnattendedFile"
+                xVhdFile "$($NodeName)_$($VmName)_CopyUnattendxml" {
+                    VhdPath       = $osVhdPath
+                    FileDirectory = MSFT_xFileDirectory {
+                        SourcePath      = $newUnattendXmlPath
+                        DestinationPath = "\Windows\Panther\unattend.xml"
+                    }
+                    DependsOn     = "[File]$($NodeName)_$($VmName)_SystemDisk", "[File]$($NodeName)_$($VmName)_UnattendedFile"
                 }
 
                 $VmDependsOn += "[xVhdFile]$($NodeName)_$($VmName)_CopyUnattendxml"
@@ -124,7 +123,6 @@ Configuration Hyper-V_Configuration
                 Ensure          = 'Present'
                 Name            = $VmName
                 VhdPath         = $osVhdPath
-                SwitchName      = $VmSwitchName
                 State           = $VmState
                 Path            = $newSystemVhdFolder
                 Generation      = $VmGeneration
@@ -135,59 +133,88 @@ Configuration Hyper-V_Configuration
                 DependsOn       = $VmDependsOn
             }
 
+            if(!$VmExists) {
+                Script "$($NodeName)_$($VmName)_RemoveDefaultNIC" {
+                    SetScript = {
+                        Remove-VmNetworkAdapter -VmName $using:VmName -Name "Network Adapter"
+                    }
+
+                    GetScript = {
+                        return $null
+                    }
+
+                    TestScript = {
+                        return $false
+                    }
+
+                    DependsOn  = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+                }
+            }
+
+            foreach ($IpConfigEntry in $IpConfig) {
+                $VmSwitchName = $IpConfigEntry[0].vSwitchName
+                $VlanId = $IpConfigEntry[0].vlanID
+                
+                xVMNetworkAdapter "$($NodeName)_$($VmName)_$($VmSwitchName)" {
+                    Ensure     = "Present"
+                    Name       = $VmSwitchName
+                    SwitchName = $VmSwitchName
+                    Id         = $VmSwitchName
+                    VmName     = $VmName
+                    DependsOn  = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+                }
+                
+                # Configure Vlan ID if provided
+                if (![string]::IsNullOrEmpty($VlanId)) {
+                    xVMNetworkAdapterVlanId "$($NodeName)_$($VmName)__$($VmSwitchName)_VlanID" {
+                        NodeName             = $NodeName
+                        VmName               = $VmName
+                        VmNetworkAdapterName = $VmSwitchName
+                        VlanId               = $VlanId
+                        DependsOn            = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+                    } 
+                }
+            }
+
             # Create and attach each data disk
-            foreach($disk in $DataDisks) {                
+            foreach ($disk in $DataDisks) {                
                 $dataVhdPath = "$($newSystemVhdFolder)\$($VMName)_$($disk.volumeLabel).vhdx"
                 $dataVhdSize = $disk.size
                 $dataVhdDriveLetter = $disk.driveLetter
                 $dataVolumeLabel = "$($VmName)_$($disk.volumeLabel)"
                 $attachDiskDependency = @("[xVMHyperV]$($NodeName)_$($VmName)_NewVM")
 
-                xVHD "$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)"
-                {
+                xVHD "$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)" {
                     Ensure           = 'Present'
                     Name             = Split-Path $dataVhdPath -leaf
                     Path             = Split-Path $dataVhdPath
                     Generation       = 'vhdx'
                     MaximumSizeBytes = $([int] $dataVhdSize * $gigabyte)
-                    DependsOn = "[File]$($NodeName)_$($VmName)_Folder"
+                    DependsOn        = "[File]$($NodeName)_$($VmName)_Folder"
                 }
                 $attachDiskDependency += "[xVHD]$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)"        
                 
-                if($OsFamily -eq "windows") {
-                    xVHDFormat "$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)" 
-                    {
-                        NodeName = $NodeName
-                        VmName = $VmName
+                if ($OsFamily -eq "windows") {
+                    xVHDFormat "$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)" {
+                        NodeName    = $NodeName
+                        VmName      = $VmName
                         DataVhdPath = $dataVhdPath
                         VolumeLabel = $dataVolumeLabel
                         DriveLetter = $dataVhdDriveLetter
-                        DependsOn = "[xVHD]$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)" 
+                        DependsOn   = "[xVHD]$($NodeName)_$($VmName)_DataDisk_$($dataVhdDriveLetter)" 
                     }
                     
                     $attachDiskDependency += "[xVHDFormat]$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)"                   
                 }
 
-                xVMAttachVHD "$($NodeName)_$($VmName)_AttachDataDisk_$($dataVhdDriveLetter)" 
-                {
-                    NodeName = $NodeName
-                    VmName = $VmName
+                xVMAttachVHD "$($NodeName)_$($VmName)_AttachDataDisk_$($dataVhdDriveLetter)" {
+                    NodeName    = $NodeName
+                    VmName      = $VmName
                     DataVhdPath = $dataVhdPath
-                    DependsOn = $attachDiskDependency
+                    DependsOn   = $attachDiskDependency
                 }
             }
             
-            # Configure Vlan ID if provided
-            if(![string]::IsNullOrEmpty($VlanId)) {
-                xVMSwitchVlanId "$($NodeName)_$($VmName)_VlanID" 
-                {
-                    NodeName = $NodeName
-                    VmName = $VmName
-                    VmSwitchName = $VmSwitchName
-                    VlanId = $VlanId
-                    DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
-                } 
-            }
         }     
     }
 }

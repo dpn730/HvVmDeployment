@@ -38,7 +38,6 @@ Configuration Hyper-V_Configuration
             $OsVersion = $Vm.osVersion                
             $OsEdition = $Vm.osEdition
             $DomainJoin = [System.Convert]::ToBoolean($Vm.domainJoin)
-            $IpConfig = $Vm.ipConfig
             $Memory = $Vm.memory
             $CPU = $Vm.vCpu
             $DataDisks = $Vm.dataDisks
@@ -46,14 +45,14 @@ Configuration Hyper-V_Configuration
             $VmState = 'Off'
             $VmExists = $false
             $VmGeneration = $Vm.generation
+            
+            $VMSwitchNames = $Vm.IpConfig.vSwitchName
 
-            # Ip Configuration Variables
-            $VmSwitchName = $IpConfig.vSwitchName
-            $VlanId = $IpConfig.vlanID
             # unattend.xml Variables
-            $VmIp = $IpConfig.ipAddress
-            $VmSubnetMask = Convert-RvNetSubnetMaskClassesToCidr $IpConfig.subnetMask
-            $Gateway = $IpConfig.defaultGateway
+            $PrimaryIPConfig = $Vm.ipConfig[0]
+            $VmIp = $PrimaryIPConfig.ipAddress
+            $VmSubnetMask = Convert-RvNetSubnetMaskClassesToCidr $PrimaryIPConfig.subnetMask
+            $Gateway = $PrimaryIPConfig.defaultGateway
             $DnsIps = @("","","","") 
             
             $dnsCount = 0
@@ -94,8 +93,8 @@ Configuration Hyper-V_Configuration
             if($VmExists -eq $false -and $OsFamily -eq "windows") {
                 # Generate content of the unattend.xml from the template
                 $sourceUnattendXmlFilename = Get-UnattendXmlFilename -OsVersion $OsVersion -OsEdition $OsEdition -DomainJoin $DomainJoin
-		Write-Host "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"                
-		$sourceUnattendXmlContent = Get-Content "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"
+		        Write-Host "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"                
+		        $sourceUnattendXmlContent = Get-Content "$($PSScriptRoot)\templates\$($sourceUnattendXmlFilename)"
                 $sourceUnattendXmlContent = $ExecutionContext.InvokeCommand.ExpandString($sourceUnattendXmlContent)
                 $newUnattendXmlPath = "$($newSystemVhdFolder)\unattend.xml"
                 
@@ -113,6 +112,7 @@ Configuration Hyper-V_Configuration
                     FileDirectory =  MSFT_xFileDirectory {
                                     SourcePath = $newUnattendXmlPath
                                     DestinationPath = "\Windows\Panther\unattend.xml"
+                                    Ensure = "Present"
                                 }
                     DependsOn = "[File]$($NodeName)_$($VmName)_SystemDisk","[File]$($NodeName)_$($VmName)_UnattendedFile"
                 }
@@ -125,7 +125,7 @@ Configuration Hyper-V_Configuration
                 Ensure          = 'Present'
                 Name            = $VmName
                 VhdPath         = $osVhdPath
-                SwitchName      = $VmSwitchName
+                SwitchName      = $VMSwitchNames
                 State           = $VmState
                 Path            = $newSystemVhdFolder
                 Generation      = $VmGeneration
@@ -134,8 +134,10 @@ Configuration Hyper-V_Configuration
                 RestartIfNeeded = $true
                 WaitForIP       = $WaitForIP 
                 DependsOn       = $VmDependsOn
+                EnableGuestService = $true
             }
 
+            $controllerLocation = 1
             # Create and attach each data disk
             foreach($disk in $DataDisks) {                
                 $dataVhdPath = "$($newSystemVhdFolder)\$($VMName)_$($disk.volumeLabel).vhdx"
@@ -169,25 +171,47 @@ Configuration Hyper-V_Configuration
                     $attachDiskDependency += "[xVHDFormat]$($NodeName)_$($VmName)_FormatDataDisk_$($dataVhdDriveLetter)"                   
                 }
 
-                xVMAttachVHD "$($NodeName)_$($VmName)_AttachDataDisk_$($dataVhdDriveLetter)" 
+                xVMHardDiskDrive "$($NodeName)_$($VmName)_AttachDataDisk_$($dataVhdDriveLetter)"
                 {
-                    NodeName = $NodeName
+                    VMName             = $VmName
+                    Path               = $dataVhdPath
+                    ControllerType     = 'SCSI'
+                    ControllerLocation = $controllerLocation
+                    Ensure             = 'Present'
+                    DependsOn          = $attachDiskDependency
+                }
+                $controllerLocation++
+            }
+
+            xVMDvdDrive "$($NodeName)_$($VmName)_NewDvdDrive"
+            {
+                Ensure  = 'Present'          
+                VmName = $VmName
+                ControllerNumber = 0
+                ControllerLocation = $controllerLocation
+                Path = $ISOPath
+                DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+            }
+
+            if([Environment]::OSVersion.Version.Major -eq 10) {
+                xVMAutoCheckpoint "$($NodeName)_$($VmName)_AutoCheckpoint" {
                     VmName = $VmName
-                    DataVhdPath = $dataVhdPath
-                    DependsOn = $attachDiskDependency
+                    Enable = $false
                 }
             }
-            
+
             # Configure Vlan ID if provided
-            if(![string]::IsNullOrEmpty($VlanId)) {
-                xVMSwitchVlanId "$($NodeName)_$($VmName)_VlanID" 
-                {
-                    NodeName = $NodeName
-                    VmName = $VmName
-                    VmSwitchName = $VmSwitchName
-                    VlanId = $VlanId
-                    DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
-                } 
+            foreach($IpConfig in $Vm.IpConfig) {
+                if(![string]::IsNullOrEmpty($IpConfig.VlanId)) {
+                    xVMSwitchVlanId "$($NodeName)_$($VmName)_$($IpConfig.vSwitchName)_VlanID" 
+                    {
+                        NodeName = $NodeName
+                        VmName = $VmName
+                        VmSwitchName = $IpConfig.vSwitchName
+                        VlanId = $IpConfig.VlanId
+                        DependsOn = "[xVMHyperV]$($NodeName)_$($VmName)_NewVM"
+                    } 
+                }
             }
         }     
     }

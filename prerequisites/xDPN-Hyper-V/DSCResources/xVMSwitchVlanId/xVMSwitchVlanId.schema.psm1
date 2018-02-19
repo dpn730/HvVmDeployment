@@ -41,6 +41,10 @@ Configuration xVMSwitchVlanId {
                     return $true
                 }
             }
+            else {
+                Write-Host "A Network Adapter could not be found for $($using:VmSwitchName) on $($using:VmName)"
+                return $true
+            }
         }
         GetScript = {
             $targetVnic = $null

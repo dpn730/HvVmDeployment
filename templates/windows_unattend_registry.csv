@@ -1,5 +1,7 @@
 osversion,osedition,domainjoin,filename
-2016,datacenter,true,unattend_2016_dom.xml
-2016,datacenter,false,unattend_2016_wg.xml
-2012R2,datacenter,true,unattend_2012R2_dom.xml
-2012R2,datacenter,false,unattend_2012R2_wg.xml
+2016,standard,true,unattend_2016_std_dom.xml
+2016,standard,false,unattend_2016_std_wg.xml
+2016,datacenter,true,unattend_2016_dc_dom.xml
+2016,datacenter,false,unattend_2016_dc_wg.xml
+2012R2,datacenter,true,unattend_2012R2_dc_dom.xml
+2012R2,datacenter,false,unattend_2012R2_dc_wg.xml
